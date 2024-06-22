@@ -24,10 +24,12 @@ public class UserService {
 
     private UserRepository userRepository;
     private PasswordGeneratorService passwordGeneratorService;
+    private EmailService emailService;
 
-    public UserService(UserRepository userRepository, PasswordGeneratorService passwordGeneratorService) {
+    public UserService(UserRepository userRepository, PasswordGeneratorService passwordGeneratorService, EmailService emailService) {
         this.userRepository = userRepository;
         this.passwordGeneratorService = passwordGeneratorService;
+        this.emailService = emailService;
     }
     private static final String EMAIL_REGEX = "^(.+)@(.+)$";
     private static final String PASSWORD_REGEX = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=-])(?=\\S+$).{8,}$";
@@ -73,13 +75,10 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
 
-        // Generar nueva contraseña
         String newPassword = passwordGeneratorService.generatePassword();
-
-        // Guardar nueva contraseña en el usuario
         user.setPassword(newPassword);
         userRepository.save(user);
-
+        emailService.sendSimpleEmail(user.getEmail(), user.getPassword());
     }
 
 
@@ -92,7 +91,5 @@ public class UserService {
         Matcher matcher = PASSWORD_PATTERN.matcher(pwdToValidate);
         return matcher.matches() ? pwdToValidate : null;
     }
-
-
 
 }
