@@ -4,15 +4,15 @@ import challenge.demo.Services.UserService;
 import challenge.demo.Services.exceptions.BadRequestException;
 import challenge.demo.Services.exceptions.InternalServerErrorException;
 import challenge.demo.Services.exceptions.ResourceNotFoundException;
+import challenge.demo.Services.usersDTO.ChangePwdDTO;
 import challenge.demo.Services.usersDTO.CreateUserDTO;
 import challenge.demo.Services.usersDTO.LoginUserDTO;
 import challenge.demo.Services.usersDTO.ReadUserDTO;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 
@@ -48,18 +48,20 @@ public class UserController {
         if (bindingResult.hasErrors()) {
             throw new BadRequestException("Campos faltantes");
         }
-         try{
-
+        try {
             Optional<ReadUserDTO> userCreated = userService.createUser(userToLogin);
-
             return userCreated.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.badRequest().build());
-        } catch (Exception e) {
+        } catch (BadRequestException e) {
+            throw new BadRequestException("Usuario/contraseña incorrectos");
+        }catch (DataIntegrityViolationException e){
+            throw new DataIntegrityViolationException("Ell email ya existe");
+        }catch (Exception e) {
             throw new InternalServerErrorException("Internal server error");
         }
     }
 
-    @PostMapping("/changePassword")
-    public ResponseEntity<String> changePassword(@RequestBody String email) {
+    @PostMapping("/changePassword/")
+    public ResponseEntity<String> changePassword(@RequestParam String email) {
         try{
             userService.changePassword(email);
             return ResponseEntity.ok("Password changed successfully");

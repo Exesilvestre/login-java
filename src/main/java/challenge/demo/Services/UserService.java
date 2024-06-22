@@ -4,14 +4,18 @@ package challenge.demo.Services;
 import challenge.demo.Entities.User;
 import challenge.demo.Repository.UserRepository;
 import challenge.demo.Services.exceptions.BadRequestException;
+import challenge.demo.Services.exceptions.DataIntegrityViolationException;
+import challenge.demo.Services.exceptions.InternalServerErrorException;
 import challenge.demo.Services.exceptions.ResourceNotFoundException;
 import challenge.demo.Services.usersDTO.CreateUserDTO;
 import challenge.demo.Services.usersDTO.LoginUserDTO;
 import challenge.demo.Services.usersDTO.ReadUserDTO;
+import jakarta.transaction.Transactional;
 import lombok.Locked;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -21,15 +25,14 @@ public class UserService {
     private UserRepository userRepository;
     private PasswordGeneratorService passwordGeneratorService;
 
-    private EmailService emailService;
-    private static final String EMAIL_REGEX = "^(.+)@(.+)$";
-    private static final String PASSWORD_REGEX = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=])(?=\\S+$).{8,}$";
-    private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
-    private static final Pattern PASSWORD_PATTERN = Pattern.compile(PASSWORD_REGEX);
-
-    public UserService(UserRepository estacionRepository) {
+    public UserService(UserRepository userRepository, PasswordGeneratorService passwordGeneratorService) {
         this.userRepository = userRepository;
+        this.passwordGeneratorService = passwordGeneratorService;
     }
+    private static final String EMAIL_REGEX = "^(.+)@(.+)$";
+    private static final String PASSWORD_REGEX = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=-])(?=\\S+$).{8,}$";
+    private static final Pattern PASSWORD_PATTERN = Pattern.compile(PASSWORD_REGEX);
+    private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
 
     public Optional<ReadUserDTO> authUser(LoginUserDTO userToLogin){
         String emailValidated = validateEmail(userToLogin.getEmail());
@@ -40,35 +43,42 @@ public class UserService {
         }
 
         Optional<User> existingUser = userRepository.findUserByEmailAndPassword(emailValidated, passwordValidated);
-
         return existingUser.map(ReadUserDTO::new);
+
+
     }
 
     public Optional<ReadUserDTO> createUser(CreateUserDTO userToCreate) {
-
         String emailValidated = validateEmail(userToCreate.getEmail());
         String passwordValidated = validatePassword(userToCreate.getPassword());
 
+
         if (emailValidated == null || passwordValidated == null) {
+            System.out.println(emailValidated + passwordValidated);
             throw new BadRequestException("\"Usuario/contraseña incorrectos");
         }
-
-        if (userRepository.existsByEmail(emailValidated)) {
+        try {
+            User user = new User(userToCreate);
+            User userSaved = userRepository.save(user);
+            return Optional.of(new ReadUserDTO(userSaved));
+        } catch (DataIntegrityViolationException e) {
             throw new BadRequestException("Email ya esta registrado");
+        } catch (Exception e) {
+            throw new InternalServerErrorException("Error creating user: " + e.getMessage());
         }
-
-        User user = new User(userToCreate);
-        User userSaved = userRepository.save(user);
-
-        return Optional.of(new ReadUserDTO(userSaved));
     }
 
+    @Transactional
     public void changePassword(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
-        user.setPassword(passwordGeneratorService.generatePassword());
+
+        // Generar nueva contraseña
+        String newPassword = passwordGeneratorService.generatePassword();
+
+        // Guardar nueva contraseña en el usuario
+        user.setPassword(newPassword);
         userRepository.save(user);
-        emailService.sendEmail(user.getEmail(), user.getPassword());
 
     }
 

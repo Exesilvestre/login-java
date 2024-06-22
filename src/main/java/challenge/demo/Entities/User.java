@@ -5,19 +5,17 @@ import challenge.demo.Services.usersDTO.CreateUserDTO;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.GenericGenerator;
 
-@Table(name = "users")
+
 @Data
+@Table(name = "users")
 @Entity
 @NoArgsConstructor
 public class User {
 
-    @Column(name = "id")
     @Id
-    @GeneratedValue(generator = "uuid2")
-    @GenericGenerator(name = "uuid2", strategy = "uuid2")
-    private String idUser;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -28,7 +26,7 @@ public class User {
     @Column
     private String name;
 
-    @Column
+    @Column(name = "last_name")
     private String lastName;
 
     public User (CreateUserDTO user){
