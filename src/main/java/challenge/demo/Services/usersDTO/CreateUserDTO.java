@@ -1,0 +1,21 @@
+package challenge.demo.Services.usersDTO;
+
+
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+public class CreateUserDTO {
+    @NotNull(message = "Email es obligatorio")
+    private String email;
+    @NotNull(message = "Password es obligatorio")
+    private String password;
+    @NotNull(message = "Nombre es obligatorio")
+    private String name;
+    @NotNull(message = "Apellido es obligatorio")
+    private String lastName;
+}
