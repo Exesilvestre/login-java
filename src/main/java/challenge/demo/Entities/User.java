@@ -1,6 +1,7 @@
 package challenge.demo.Entities;
 
 
+import challenge.demo.Services.usersDTO.CreateUserDTO;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -9,6 +10,7 @@ import org.hibernate.annotations.GenericGenerator;
 @Table(name = "users")
 @Data
 @Entity
+@NoArgsConstructor
 public class User {
 
     @Column(name = "id")
@@ -28,4 +30,11 @@ public class User {
 
     @Column
     private String lastName;
+
+    public User (CreateUserDTO user){
+        this.email = user.getEmail();
+        this.password = user.getPassword();
+        this.name = user.getName();
+        this.lastName = user.getLastName();
+    }
 }
