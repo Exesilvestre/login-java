@@ -35,7 +35,6 @@ public class login extends JFrame {
         setVisible(true);
 
 
-
         ingresarButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
