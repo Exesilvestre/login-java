@@ -4,12 +4,10 @@ import challenge.demo.Services.UserService;
 import challenge.demo.Services.exceptions.BadRequestException;
 import challenge.demo.Services.exceptions.InternalServerErrorException;
 import challenge.demo.Services.exceptions.ResourceNotFoundException;
-import challenge.demo.Services.usersDTO.ChangePwdDTO;
 import challenge.demo.Services.usersDTO.CreateUserDTO;
 import challenge.demo.Services.usersDTO.LoginUserDTO;
 import challenge.demo.Services.usersDTO.ReadUserDTO;
 import jakarta.validation.Valid;
-import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -32,13 +30,15 @@ public class UserController {
             Optional<ReadUserDTO> userLogged = userService.authUser(userToLogin);
 
             if (userLogged.isEmpty()) {
-                throw new ResourceNotFoundException("Usuario no encontrado");
+                throw new ResourceNotFoundException("Usuario/contraseña incorrectos");
             }
             return ResponseEntity.ok(userLogged.get());
 
         }catch (BadRequestException e) {
             throw e;
-        } catch (Exception e) {
+        }  catch (ResourceNotFoundException e) {
+            throw e;
+        }catch (Exception e) {
             throw new InternalServerErrorException("Internal server error");
         }
     }
@@ -52,9 +52,7 @@ public class UserController {
             Optional<ReadUserDTO> userCreated = userService.createUser(userToLogin);
             return userCreated.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.badRequest().build());
         } catch (BadRequestException e) {
-            throw new BadRequestException("Usuario/contraseña incorrectos");
-        }catch (DataIntegrityViolationException e){
-            throw new DataIntegrityViolationException("Ell email ya existe");
+            throw e;
         }catch (Exception e) {
             throw new InternalServerErrorException("Internal server error");
         }

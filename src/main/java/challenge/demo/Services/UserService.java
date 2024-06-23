@@ -3,10 +3,7 @@ package challenge.demo.Services;
 
 import challenge.demo.Entities.User;
 import challenge.demo.Repository.UserRepository;
-import challenge.demo.Services.exceptions.BadRequestException;
-import challenge.demo.Services.exceptions.DataIntegrityViolationException;
-import challenge.demo.Services.exceptions.InternalServerErrorException;
-import challenge.demo.Services.exceptions.ResourceNotFoundException;
+import challenge.demo.Services.exceptions.*;
 import challenge.demo.Services.usersDTO.CreateUserDTO;
 import challenge.demo.Services.usersDTO.LoginUserDTO;
 import challenge.demo.Services.usersDTO.ReadUserDTO;
@@ -32,7 +29,7 @@ public class UserService {
         this.emailService = emailService;
     }
     private static final String EMAIL_REGEX = "^(.+)@(.+)$";
-    private static final String PASSWORD_REGEX = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=-])(?=\\S+$).{8,}$";
+    private static final String PASSWORD_REGEX = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*()_+])(?=\\S+$).{8,}$";
     private static final Pattern PASSWORD_PATTERN = Pattern.compile(PASSWORD_REGEX);
     private static final Pattern EMAIL_PATTERN = Pattern.compile(EMAIL_REGEX);
 
@@ -41,7 +38,7 @@ public class UserService {
         String passwordValidated = validatePassword(userToLogin.getPassword());
 
         if (emailValidated == null || passwordValidated == null) {
-            throw new BadRequestException("\"Usuario/contraseña incorrectos");
+            throw new BadRequestException("Usuario/contraseña incorrectos");
         }
 
         Optional<User> existingUser = userRepository.findUserByEmailAndPassword(emailValidated, passwordValidated);
@@ -54,18 +51,19 @@ public class UserService {
         String emailValidated = validateEmail(userToCreate.getEmail());
         String passwordValidated = validatePassword(userToCreate.getPassword());
 
-
         if (emailValidated == null || passwordValidated == null) {
             System.out.println(emailValidated + passwordValidated);
-            throw new BadRequestException("\"Usuario/contraseña incorrectos");
+            throw new BadRequestException("Usuario/contraseña incorrectos");
+        }
+        if (userRepository.existsByEmail(userToCreate.getEmail())) {
+            throw new BadRequestException("El email ya está registrado");
         }
         try {
             User user = new User(userToCreate);
             User userSaved = userRepository.save(user);
             return Optional.of(new ReadUserDTO(userSaved));
-        } catch (DataIntegrityViolationException e) {
-            throw new BadRequestException("Email ya esta registrado");
         } catch (Exception e) {
+            System.out.println(e);
             throw new InternalServerErrorException("Error creating user: " + e.getMessage());
         }
     }
